@@ -21,7 +21,7 @@ def removeEmptyChunks(regionX,regionZ):
 			chunk and 										# Chunk exists
 			"Biomes" in chunk["Level"] and 					# Chunk has been loaded
 			chunk["Level"]["InhabitedTime"].value > 0 and 	# Chunk has been visisted
-			len(chunk["Level"]["Sections"]) > 0 			# Chunk has content
+			len(chunk["Level"]["Sections"]) > 0 			# Chunk contains blocks (including air)
 			):
 				newRegion.add_chunk(region.get_chunk(chunkX,chunkZ))
 				isEmpty = False
@@ -31,8 +31,8 @@ def removeEmptyChunks(regionX,regionZ):
 		return newRegion
 
 for item in os.scandir(inputDir):
-	if item.path.endswith(".mca") and item.is_file():
-		regionCoords = re.findall('r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0]
+	if item.path.endswith(".mca") and item.is_file(): # if it's a mca file...
+		regionCoords = re.findall('r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
 		if regionCoords:
 			region = removeEmptyChunks(regionCoords[0],regionCoords[1])
 			if region:
