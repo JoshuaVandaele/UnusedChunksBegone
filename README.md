@@ -1,4 +1,3 @@
-Required pip package: `anvil-parser`  
 Due to https://github.com/matcool/anvil-parser/issues/27, you will need to edit the file located at `%localappdata%\Programs\Python\Python39\lib\site-packages\anvil\empty_region.py` on Windows. Edit line 49 of `empty_region.py` to just be `return True`.
 
 # Use case
