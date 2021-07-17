@@ -1,5 +1,5 @@
 # For this script to work, you need
-# to edit line 49 of anvil\empty_region.py
+# to edit line 49 of libs\anvilparser\anvil\empty_region.py
 # to return True because one of the checks is messed up
 # https://github.com/matcool/anvil-parser/issues/27
 
