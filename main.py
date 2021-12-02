@@ -28,21 +28,28 @@ def removeEmptyChunks(regionX,regionZ,directory):
 if __name__ == "__main__":
 	import os
 	import re
+	from multiprocessing.pool import ThreadPool as Pool
+	import multiprocessing
 
 	inputDir = "./input/"
 	outputDir = "./output/"
 
-	for item in os.scandir(inputDir):
-		if item.path.endswith(".mca") and item.is_file(): # if it's a mca file...
-			regionCoords = re.findall('r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
-			if regionCoords:
-				try:
-					region = removeEmptyChunks(regionCoords[0],regionCoords[1], inputDir)
-					if region:
-						print(item.name+" has been cleaned! Saving..")
-						region.save(outputDir+item.name)
-					else:
-						print("Removing file '"+item.name+"' as it contains nothing but empty chunks.")
-				except nbt.nbt.MalformatedFileError:
-					print("ERROR! File '"+item.name+"' contains corrupted or malformated data! We therefore cannot shrink it!")
-					os.system("cp "+inputDir+item.name+" "+outputDir+item.name)
+	def worker(regionCoords):
+		filename = "r."+regionCoords[0]+"."+regionCoords[1]+".mca"
+		region = removeEmptyChunks(regionCoords[0],regionCoords[1], inputDir)
+		if region:
+			print(filename+" has been cleaned! Saving..")
+			region.save(outputDir+filename)
+		else:
+			print("Removing file '"+filename+"' as it contains nothing but empty chunks.")
+
+	with Pool(multiprocessing.cpu_count()) as pool:
+		regions = []
+		for item in os.scandir(inputDir):
+			if item.path.endswith(".mca") and item.is_file(): # if it's a mca file...
+				regionCoords = re.findall('r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
+				if regionCoords:
+					regions.append(regionCoords)
+		pool.map(worker,regions)
+
+	print("Done!")
