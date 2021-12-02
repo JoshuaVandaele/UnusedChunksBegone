@@ -11,13 +11,13 @@ def getChunkVersion(chunk):
 	else:
 		return 18 # 1.18+
 
-def seventeenChecks(chunk):
+def seventeenChecks(chunk): # 1.17 Checks
 	return (
 		"Biomes" in chunk["Level"] # Chunk has been loaded
 		and chunk["Level"]["InhabitedTime"].value > 0 # Chunk has been visisted
 		)
 
-def eighteenChecks(chunk):
+def eighteenChecks(chunk): # 1.18 Checks
 	return (
 		chunk["Status"].value == "full" # Minecraft thinks the chunk has been fully populated/loaded
 		and chunk["InhabitedTime"].value > 0 # Chunk has been visited/loaded by a player
