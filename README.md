@@ -1,5 +1,3 @@
-Due to https://github.com/matcool/anvil-parser/issues/27, you will need to edit the file located at `libs\anvilparser\anvil\empty_region.py` on Windows. Edit line 49 of `empty_region.py` (First line of the function `inside`) to just be `return True`.
-
 # Use case
 This script is a script that locates and deletes unloaded and unused chunks inside of region files. This saves significants amounts of space. (In my own testing, it went down by five or seven folds.)
 

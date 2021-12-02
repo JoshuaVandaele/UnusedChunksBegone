@@ -1,8 +1,3 @@
-# For this script to work, you need
-# to edit line 49 of libs\anvilparser\anvil\empty_region.py ( First line of function inside() )
-# to return True because one of the checks is messed up
-# https://github.com/matcool/anvil-parser/issues/27
-
 import libs.anvilparser.anvil as anvil
 
 def getChunkVersion(chunk):
