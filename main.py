@@ -5,6 +5,24 @@
 
 import libs.anvilparser.anvil as anvil
 
+def getChunkVersion(chunk):
+	if chunk["DataVersion"].value < 2860:
+		return 17 # 1.17-
+	else:
+		return 18 # 1.18+
+
+def seventeenChecks(chunk):
+	return (
+		"Biomes" in chunk["Level"] # Chunk has been loaded
+		and chunk["Level"]["InhabitedTime"].value > 0 # Chunk has been visisted
+		)
+
+def eighteenChecks(chunk):
+	return (
+		chunk["Status"].value == "full" # Minecraft thinks the chunk has been fully populated/loaded
+		and chunk["InhabitedTime"].value > 0 # Chunk has been visited/loaded by a player
+		)
+
 def removeEmptyChunks(regionX,regionZ,directory):
 	region = anvil.Region.from_file(directory+'r.'+str(regionX)+"."+str(regionZ)+'.mca')
 	newRegion = anvil.EmptyRegion(regionX,regionZ)
@@ -12,14 +30,14 @@ def removeEmptyChunks(regionX,regionZ,directory):
 	for chunkX in range(0,32):
 		for chunkZ in range(0,32):
 			chunk = region.chunk_data(chunkX,chunkZ)
-			if (
-			chunk and 										# Chunk exists
-			"Biomes" in chunk["Level"] and 					# Chunk has been loaded
-			chunk["Level"]["InhabitedTime"].value > 0 and 	# Chunk has been visisted
-			len(chunk["Level"]["Sections"]) > 0 			# Chunk contains blocks (including air)
-			):
-				newRegion.add_chunk(anvil.Chunk.from_region(region,chunkX,chunkZ))
-				isEmpty = False
+			if chunk:
+				ver = getChunkVersion(chunk)
+				if ver == 17 and seventeenChecks(chunk):
+					newRegion.add_chunk(anvil.Chunk.from_region(region,chunkX,chunkZ))
+					isEmpty = False
+				elif ver >= 18 and eighteenChecks(chunk):
+					newRegion.add_chunk(anvil.Chunk.from_region(region,chunkX,chunkZ))
+					isEmpty = False
 	if isEmpty:
 		return None
 	else:
