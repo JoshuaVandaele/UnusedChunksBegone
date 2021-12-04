@@ -148,7 +148,7 @@ if __name__ == "__main__":
         regions = []
         for item in os.scandir(inputDir):
             if item.path.endswith(".mca") and item.is_file(): # if it's a mca file...
-                regionCoords = re.findall('r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
+                regionCoords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
                 if regionCoords:
                     regions.append(regionCoords)
         pool.map(worker,regions)
