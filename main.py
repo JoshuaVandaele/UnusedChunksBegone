@@ -1,4 +1,4 @@
-#!/usr/bin/python6
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import libs.anvilparser.anvil as anvil
 
