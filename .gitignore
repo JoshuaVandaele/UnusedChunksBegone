@@ -1,2 +1,8 @@
+# Compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Region files
 *.mca
 *.mcr
