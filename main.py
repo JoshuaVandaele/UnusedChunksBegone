@@ -148,11 +148,18 @@ if __name__ == "__main__":
     if "-output" in sys.argv:
         settings["outputDir"] = sys.argv[sys.argv.index("-output")+1]
 
-    if not os.path.exists(settings["outputDir"]):
+    if not settings["inputDir"].endswith("/") or not settings["inputDir"].endswith("\\"): # Ensure it's a directory
+        settings["inputDir"]+="/"
+
+    if not settings["outputDir"].endswith("/") or not settings["outputDir"].endswith("\\"): # Ensure it's a directory
+        settings["outputDir"]+="/"
+        
+    if not os.path.exists(settings["outputDir"]): # Ensure the directory exists
         os.makedirs(settings["outputDir"])
 
-    if not os.path.exists(settings["inputDir"]):
+    if not os.path.exists(settings["inputDir"]): # Ensure the directory exists
         os.makedirs(settings["inputDir"])
+
 
     def worker(regionCoords: tuple) -> None:
         filename = "r."+regionCoords[0]+"."+regionCoords[1]+".mca"
