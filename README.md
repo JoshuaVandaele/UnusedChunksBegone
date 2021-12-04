@@ -7,4 +7,4 @@ Put all of your .mca region files into the `input` folder and then run the scrip
 # Arguments
 * `-nokeep` Delete the files as they are done being treated (Default: False)
 * `-input "directory"` Select your input folder (Default: ./input/)
-* `-output "directory"` Select your output folds (Default: ./output/)
+* `-output "directory"` Select your output folder (Default: ./output/)
