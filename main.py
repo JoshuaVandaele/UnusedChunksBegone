@@ -127,26 +127,47 @@ def removeEmptyChunks(regionX: str, regionZ: str, directory: str) -> anvil.Empty
         return newRegion
 
 if __name__ == "__main__":
+    import sys
     import os
     import re
     from multiprocessing.pool import ThreadPool as Pool
     import multiprocessing
 
-    inputDir = "./input/"
-    outputDir = "./output/"
+    settings = {
+        "noKeep": False,
+        "inputDir": "./input/",
+        "outputDir": "./output/"
+    }
 
-    def worker(regionCoords: tuple[str, str]) -> None:
+    if "-nokeep" in sys.argv:
+        settings["noKeep"] = True
+
+    if "-input" in sys.argv:
+        settings["inputDir"] = sys.argv[sys.argv.index("-input")+1]
+
+    if "-output" in sys.argv:
+        settings["outputDir"] = sys.argv[sys.argv.index("-output")+1]
+
+    if not os.path.exists(settings["outputDir"]):
+        os.makedirs(settings["outputDir"])
+
+    if not os.path.exists(settings["inputDir"]):
+        os.makedirs(settings["inputDir"])
+
+    def worker(regionCoords: tuple) -> None:
         filename = "r."+regionCoords[0]+"."+regionCoords[1]+".mca"
-        region = removeEmptyChunks(regionCoords[0],regionCoords[1], inputDir)
+        region = removeEmptyChunks(regionCoords[0],regionCoords[1], settings["inputDir"])
         if region:
             print(filename+" has been cleaned! Saving..")
-            region.save(outputDir+filename)
+            region.save(settings["outputDir"]+filename)
+            if settings["noKeep"]:
+                os.remove(settings["inputDir"]+filename)
         else:
             print("Removing file '"+filename+"' as it contains nothing but empty chunks.")
 
     with Pool(multiprocessing.cpu_count()) as pool:
         regions = []
-        for item in os.scandir(inputDir):
+        for item in os.scandir(settings["inputDir"]):
             if item.path.endswith(".mca") and item.is_file(): # if it's a mca file...
                 regionCoords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
                 if regionCoords:
