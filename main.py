@@ -165,8 +165,7 @@ def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: b
                     isEmpty = False
     if isEmpty:
         return None
-    else:
-        return newRegion
+    return newRegion
 
 if __name__ == "__main__":
     import sys
