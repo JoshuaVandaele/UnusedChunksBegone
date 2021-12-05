@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Usage: python main.py <args\>
+Usage: python optimise.py <args\>
 
 Please read the README for more information.
 
 Examples
 --------
->>> python main.py -nokeep
+>>> python optimise.py -nokeep
 """
 import libs.anvilparser.anvil as anvil
 
