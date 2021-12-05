@@ -5,7 +5,8 @@ import libs.anvilparser.anvil as anvil
 _VERSION_21w43a = 2844 # Version where "Level" was removed from chunk
 
 def getChunkVersion(chunk: anvil.Chunk) -> int:
-    """Used to know the chunk version.
+    """
+    Used to know the chunk version.
 
     This function uses the chunk's "DataVersion" value.
 
@@ -26,7 +27,8 @@ def getChunkVersion(chunk: anvil.Chunk) -> int:
         return 1 # 1.18+
 
 def seventeenChecks(chunk: anvil.Chunk) -> bool: # 1.17 Checks
-    """Used for checks prior to the 1.18 chunk format change.
+    """
+    Used for checks prior to the 1.18 chunk format change.
 
     This function simply checks if a chunk is useless using a few known critters:
 
@@ -53,7 +55,8 @@ def seventeenChecks(chunk: anvil.Chunk) -> bool: # 1.17 Checks
         )
 
 def eighteenChecks(chunk: anvil.Chunk) -> bool: # 1.18 Checks
-    """Used for checks after the 1.18 chunk format change.
+    """
+    Used for checks after the 1.18 chunk format change.
 
     This function simply checks if a chunk is useless using a few known critters:
 
@@ -80,7 +83,8 @@ def eighteenChecks(chunk: anvil.Chunk) -> bool: # 1.18 Checks
         )
 
 def optimiseChunk(chunk,chunkVer):
-    """Optimise singular chunks.
+    """
+    Optimise singular chunks.
 
     This is accomplished by deleting pre-calculated/cached data.
 
@@ -111,7 +115,8 @@ def optimiseChunk(chunk,chunkVer):
     return chunk
 
 def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: bool) -> anvil.EmptyRegion:
-    """Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
+    """
+    Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
 
     Parameters
     ----------
