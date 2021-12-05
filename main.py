@@ -82,7 +82,39 @@ def eighteenChecks(chunk: anvil.Chunk) -> bool: # 1.18 Checks
         and chunk["InhabitedTime"].value > 0 # Chunk has been visited/loaded by a player
         )
 
-def removeEmptyChunks(regionX: str, regionZ: str, directory: str) -> anvil.EmptyRegion:
+def optimiseChunk(chunk,chunkVer):
+    """
+    Optimise singular chunks.
+
+    This is accomplished by deleting pre-calculated/cached data.
+
+    Parameters
+    ----------
+    chunk : anvil.Chunk
+        Chunk to verify.
+
+    Returns
+    -------
+    anvil.Chunk
+        Optimised chunk.
+
+    See Also
+    --------
+    optimiseRegion: Optimise an entire region file.
+    """
+    if chunkVer == 0: # 1.17-
+        if "Heightmaps" in chunk["Level"]:
+            del chunk["Level"]["Heightmaps"]
+        if "isLightOn" in chunk["Level"]:
+            del chunk["Level"]["isLightOn"]
+    elif chunkVer == 1: # 1.18+
+        if "Heightmaps" in chunk:
+            del chunk["Heightmaps"]
+        if "isLightOn" in chunk:
+            del chunk["isLightOn"]
+    return chunk
+
+def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: bool) -> anvil.EmptyRegion:
     """
     Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
 
@@ -94,6 +126,8 @@ def removeEmptyChunks(regionX: str, regionZ: str, directory: str) -> anvil.Empty
         The region's Y position.
     directory : str
         The region file's directory.
+    optimiseChunks : bool
+        Also optimise singular chunks or not?
 
     Returns
     -------
@@ -104,8 +138,12 @@ def removeEmptyChunks(regionX: str, regionZ: str, directory: str) -> anvil.Empty
 
     Examples
     --------
-    >>> removeEmptyChunks("-1","0","./world/regions/")
+    >>> optimiseRegion("-1","0","./world/regions/",True)
     libs.anvilparser.anvil.empty_region.EmptyRegion object
+
+    See Also
+    --------
+    optimiseChunk: Optimize a singular chunk.
     """
     region = anvil.Region.from_file(directory+'r.'+regionX+"."+regionZ+'.mca')
     newRegion = anvil.EmptyRegion(regionX,regionZ)
@@ -113,13 +151,18 @@ def removeEmptyChunks(regionX: str, regionZ: str, directory: str) -> anvil.Empty
     for chunkX in range(0,32):
         for chunkZ in range(0,32):
             chunk = region.chunk_data(chunkX,chunkZ)
-            if chunk:
-                ver = getChunkVersion(chunk)
+
+            if chunk: # If a chunk exists at those chunk coordinates
+                ver = getChunkVersion(chunk) # Get it's version
                 if ver == 0 and seventeenChecks(chunk):
-                    newRegion.add_chunk(anvil.Chunk.from_region(region,chunkX,chunkZ))
+                    if optimiseChunks: 
+                        chunk = optimiseChunk(chunk,0) # Optimise the chunk itself if asked
+                    newRegion.add_chunk(anvil.Chunk(chunk)) # Add the chunk to the proper position in the new, optimized region
                     isEmpty = False
                 elif ver == 1 and eighteenChecks(chunk):
-                    newRegion.add_chunk(anvil.Chunk.from_region(region,chunkX,chunkZ))
+                    if optimiseChunks: 
+                        chunk = optimiseChunk(chunk,1) # Optimise the chunk itself if asked
+                    newRegion.add_chunk(anvil.Chunk(chunk)) # Add the chunk to the proper position in the new, optimized region
                     isEmpty = False
     if isEmpty:
         return None
@@ -136,11 +179,15 @@ if __name__ == "__main__":
     settings = {
         "noKeep": False,
         "inputDir": "./input/",
-        "outputDir": "./output/"
+        "outputDir": "./output/",
+        "optimiseChunks": False
     }
 
     if "-nokeep" in sys.argv:
         settings["noKeep"] = True
+
+    if "-optimisechunks" in sys.argv:
+        settings["optimiseChunks"] = True
 
     if "-input" in sys.argv:
         settings["inputDir"] = sys.argv[sys.argv.index("-input")+1]
@@ -163,7 +210,7 @@ if __name__ == "__main__":
 
     def worker(regionCoords: tuple) -> None:
         filename = "r."+regionCoords[0]+"."+regionCoords[1]+".mca"
-        region = removeEmptyChunks(regionCoords[0],regionCoords[1], settings["inputDir"])
+        region = optimiseRegion(regionCoords[0],regionCoords[1], settings["inputDir"], settings["optimiseChunks"])
         if region:
             print(filename+" has been cleaned! Saving..")
             region.save(settings["outputDir"]+filename)
