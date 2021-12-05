@@ -23,8 +23,7 @@ def getChunkVersion(chunk: anvil.Chunk) -> int:
     """
     if chunk["DataVersion"].value < _VERSION_21w43a:
         return 0 # 1.17-
-    else:
-        return 1 # 1.18+
+    return 1 # 1.18+
 
 def seventeenChecks(chunk: anvil.Chunk) -> bool: # 1.17 Checks
     """
@@ -160,7 +159,7 @@ def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: b
                     newRegion.add_chunk(anvil.Chunk(chunk)) # Add the chunk to the proper position in the new, optimized region
                     isEmpty = False
                 elif ver == 1 and eighteenChecks(chunk):
-                    if optimiseChunks: 
+                    if optimiseChunks:
                         chunk = optimiseChunk(chunk,1) # Optimise the chunk itself if asked
                     newRegion.add_chunk(anvil.Chunk(chunk)) # Add the chunk to the proper position in the new, optimized region
                     isEmpty = False
