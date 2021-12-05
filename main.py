@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Usage: python main.py <args\>
+
+Please read the README for more information.
+
+Examples
+--------
+>>> python main.py -nokeep
+"""
 import libs.anvilparser.anvil as anvil
 
 _VERSION_21w43a = 2844  # Version where "Level" was removed from chunk
