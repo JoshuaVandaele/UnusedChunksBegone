@@ -122,7 +122,9 @@ def optimise_chunk(chunk, chunk_ver):
     return chunk
 
 
-def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunks: bool) -> anvil.EmptyRegion:
+def optimise_region(
+    region_x: str, region_z: str, directory: str, optimise_chunks: bool
+) -> anvil.EmptyRegion:
     """
     Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
 
@@ -153,7 +155,9 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunk
     --------
     optimise_chunk: Optimize a singular chunk.
     """
-    region = anvil.Region.from_file(directory+'r.'+region_x+"."+region_z+'.mca')
+    region = anvil.Region.from_file(
+        directory + "r." + region_x + "." + region_z + ".mca"
+    )
     new_region = anvil.EmptyRegion(region_x, region_z)
     is_empty = True
     for chunk_x in range(0, 32):
@@ -192,7 +196,7 @@ if __name__ == "__main__":
         "no_keep": False,
         "input_dir": "./input/",
         "output_dir": "./output/",
-        "optimise_chunks": False
+        "optimise_chunks": False,
     }
 
     if "-nokeep" in sys.argv:
@@ -202,17 +206,21 @@ if __name__ == "__main__":
         settings["optimise_chunks"] = True
 
     if "-input" in sys.argv:
-        settings["input_dir"] = sys.argv[sys.argv.index("-input")+1]
+        settings["input_dir"] = sys.argv[sys.argv.index("-input") + 1]
 
     if "-output" in sys.argv:
-        settings["output_dir"] = sys.argv[sys.argv.index("-output")+1]
+        settings["output_dir"] = sys.argv[sys.argv.index("-output") + 1]
 
     # Ensure it's a directory
-    if not settings["input_dir"].endswith("/") or not settings["input_dir"].endswith("\\"):
+    if not settings["input_dir"].endswith("/") or not settings["input_dir"].endswith(
+        "\\"
+    ):
         settings["input_dir"] += "/"
 
     # Ensure it's a directory
-    if not settings["output_dir"].endswith("/") or not settings["output_dir"].endswith("\\"):
+    if not settings["output_dir"].endswith("/") or not settings["output_dir"].endswith(
+        "\\"
+    ):
         settings["output_dir"] += "/"
 
     # Ensure the directory exists
@@ -225,15 +233,22 @@ if __name__ == "__main__":
 
     def worker(region_coords: tuple) -> None:
         """Worker used for multiprocessing the I/O and optimising tasks"""
-        filename = "r."+region_coords[0]+"."+region_coords[1]+".mca"
-        region = optimise_region(region_coords[0], region_coords[1], settings["input_dir"], settings["optimise_chunks"])
+        filename = "r." + region_coords[0] + "." + region_coords[1] + ".mca"
+        region = optimise_region(
+            region_coords[0],
+            region_coords[1],
+            settings["input_dir"],
+            settings["optimise_chunks"],
+        )
         if region:
-            print(filename+" has been cleaned! Saving..")
-            region.save(settings["output_dir"]+filename)
+            print(filename + " has been cleaned! Saving..")
+            region.save(settings["output_dir"] + filename)
             if settings["no_keep"]:
-                os.remove(settings["input_dir"]+filename)
+                os.remove(settings["input_dir"] + filename)
         else:
-            print(f"Removing file '{filename}' as it contains nothing but empty chunks.")
+            print(
+                f"Removing file '{filename}' as it contains nothing but empty chunks."
+            )
 
     with Pool(multiprocessing.cpu_count()) as pool:
         region_coords_list = []
@@ -241,7 +256,7 @@ if __name__ == "__main__":
             # if it's a mca file...
             if item.path.endswith(".mca") and item.is_file():
                 # Extract the region coordinates from the file name
-                region_coords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]
+                region_coords = re.findall(r"r\.(-?\d+)\.(-?\d+)\.mca", item.name)[0]
                 if region_coords:
                     region_coords_list.append(region_coords)
         pool.map(worker, region_coords_list)
