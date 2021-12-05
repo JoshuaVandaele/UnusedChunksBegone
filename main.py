@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 import libs.anvilparser.anvil as anvil
 
-_VERSION_21w43a = 2844 # Version where "Level" was removed from chunk
+_VERSION_21w43a = 2844  # Version where "Level" was removed from chunk
 
-def getChunkVersion(chunk: anvil.Chunk) -> int:
+
+def get_chunk_version(chunk: anvil.Chunk) -> int:
     """
     Used to know the chunk version.
 
@@ -22,10 +23,11 @@ def getChunkVersion(chunk: anvil.Chunk) -> int:
         * 1 For version from 1.18 and up.
     """
     if chunk["DataVersion"].value < _VERSION_21w43a:
-        return 0 # 1.17-
-    return 1 # 1.18+
+        return 0  # 1.17-
+    return 1  # 1.18+
 
-def seventeenChecks(chunk: anvil.Chunk) -> bool: # 1.17 Checks
+
+def seventeen_checks(chunk: anvil.Chunk) -> bool:  # 1.17 Checks
     """
     Used for checks prior to the 1.18 chunk format change.
 
@@ -46,14 +48,17 @@ def seventeenChecks(chunk: anvil.Chunk) -> bool: # 1.17 Checks
 
     See Also
     --------
-    eighteenChecks : Checks for the 1.18+ versions.
+    eighteen_checks : Checks for the 1.18+ versions.
     """
     return (
-        "Biomes" in chunk["Level"] # Chunk has been loaded
-        and chunk["Level"]["InhabitedTime"].value > 0 # Chunk has been visisted
-        )
+        # Chunk has been loaded
+        "Biomes" in chunk["Level"]
+        # Chunk has been visited
+        and chunk["Level"]["InhabitedTime"].value > 0
+    )
 
-def eighteenChecks(chunk: anvil.Chunk) -> bool: # 1.18 Checks
+
+def eighteen_checks(chunk: anvil.Chunk) -> bool:  # 1.18 Checks
     """
     Used for checks after the 1.18 chunk format change.
 
@@ -74,14 +79,17 @@ def eighteenChecks(chunk: anvil.Chunk) -> bool: # 1.18 Checks
 
     See Also
     --------
-    seventeenChecks: Checks for the 1.17- versions.
+    seventeen_checks: Checks for the 1.17- versions.
     """
     return (
-        chunk["Status"].value == "full" # Minecraft thinks the chunk has been fully populated/loaded
-        and chunk["InhabitedTime"].value > 0 # Chunk has been visited/loaded by a player
-        )
+        # Minecraft thinks the chunk has been fully populated/loaded
+        chunk["Status"].value == "full"
+        # Chunk has been visited/loaded by a player
+        and chunk["InhabitedTime"].value > 0
+    )
 
-def optimiseChunk(chunk,chunkVer):
+
+def optimise_chunk(chunk, chunkVer):
     """
     Optimise singular chunks.
 
@@ -99,21 +107,22 @@ def optimiseChunk(chunk,chunkVer):
 
     See Also
     --------
-    optimiseRegion: Optimise an entire region file.
+    optimise_region: Optimise an entire region file.
     """
-    if chunkVer == 0: # 1.17-
+    if chunkVer == 0:  # 1.17-
         if "Heightmaps" in chunk["Level"]:
             del chunk["Level"]["Heightmaps"]
         if "isLightOn" in chunk["Level"]:
             del chunk["Level"]["isLightOn"]
-    elif chunkVer == 1: # 1.18+
+    elif chunkVer == 1:  # 1.18+
         if "Heightmaps" in chunk:
             del chunk["Heightmaps"]
         if "isLightOn" in chunk:
             del chunk["isLightOn"]
     return chunk
 
-def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: bool) -> anvil.EmptyRegion:
+
+def optimise_region(regionX: str, regionZ: str, directory: str, optimise_chunks: bool) -> anvil.EmptyRegion:
     """
     Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
 
@@ -125,7 +134,7 @@ def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: b
         The region's Y position.
     directory : str
         The region file's directory.
-    optimiseChunks : bool
+    optimise_chunks : bool
         Also optimise singular chunks or not?
 
     Returns
@@ -137,35 +146,40 @@ def optimiseRegion(regionX: str, regionZ: str, directory: str, optimiseChunks: b
 
     Examples
     --------
-    >>> optimiseRegion("-1","0","./world/regions/",True)
+    >>> optimise_region("-1","0","./world/regions/",True)
     libs.anvilparser.anvil.empty_region.EmptyRegion object
 
     See Also
     --------
-    optimiseChunk: Optimize a singular chunk.
+    optimise_chunk: Optimize a singular chunk.
     """
     region = anvil.Region.from_file(directory+'r.'+regionX+"."+regionZ+'.mca')
-    newRegion = anvil.EmptyRegion(regionX,regionZ)
+    newRegion = anvil.EmptyRegion(regionX, regionZ)
     isEmpty = True
-    for chunkX in range(0,32):
-        for chunkZ in range(0,32):
-            chunk = region.chunk_data(chunkX,chunkZ)
+    for chunk_x in range(0, 32):
+        for chunk_z in range(0, 32):
+            chunk = region.chunk_data(chunk_x, chunk_z)
 
-            if chunk: # If a chunk exists at those chunk coordinates
-                ver = getChunkVersion(chunk) # Get it's version
-                if ver == 0 and seventeenChecks(chunk):
-                    if optimiseChunks:
-                        chunk = optimiseChunk(chunk,0) # Optimise the chunk itself if asked
-                    newRegion.add_chunk(anvil.Chunk(chunk)) # Add the chunk to the proper position in the new, optimized region
+            if chunk:  # If a chunk exists at those chunk coordinates
+                ver = get_chunk_version(chunk)  # Get it's version
+                if ver == 0 and seventeen_checks(chunk):
+                    if optimise_chunks:
+                        # Optimise the chunk itself if asked
+                        chunk = optimise_chunk(chunk, 0)
+                    # Adds the chunk to the new optimized region
+                    newRegion.add_chunk(anvil.Chunk(chunk))
                     isEmpty = False
-                elif ver == 1 and eighteenChecks(chunk):
-                    if optimiseChunks:
-                        chunk = optimiseChunk(chunk,1) # Optimise the chunk itself if asked
-                    newRegion.add_chunk(anvil.Chunk(chunk)) # Add the chunk to the proper position in the new, optimized region
+                elif ver == 1 and eighteen_checks(chunk):
+                    if optimise_chunks:
+                        # Optimise the chunk itself if asked
+                        chunk = optimise_chunk(chunk, 1)
+                    # Adds the chunk to the new optimized region
+                    newRegion.add_chunk(anvil.Chunk(chunk))
                     isEmpty = False
     if isEmpty:
         return None
     return newRegion
+
 
 if __name__ == "__main__":
     import sys
@@ -175,55 +189,60 @@ if __name__ == "__main__":
     import multiprocessing
 
     settings = {
-        "noKeep": False,
-        "inputDir": "./input/",
-        "outputDir": "./output/",
-        "optimiseChunks": False
+        "no_keep": False,
+        "input_dir": "./input/",
+        "output_dir": "./output/",
+        "optimise_chunks": False
     }
 
     if "-nokeep" in sys.argv:
-        settings["noKeep"] = True
+        settings["no_keep"] = True
 
     if "-optimisechunks" in sys.argv:
-        settings["optimiseChunks"] = True
+        settings["optimise_chunks"] = True
 
     if "-input" in sys.argv:
-        settings["inputDir"] = sys.argv[sys.argv.index("-input")+1]
+        settings["input_dir"] = sys.argv[sys.argv.index("-input")+1]
 
     if "-output" in sys.argv:
-        settings["outputDir"] = sys.argv[sys.argv.index("-output")+1]
+        settings["output_dir"] = sys.argv[sys.argv.index("-output")+1]
 
-    if not settings["inputDir"].endswith("/") or not settings["inputDir"].endswith("\\"): # Ensure it's a directory
-        settings["inputDir"]+="/"
+    # Ensure it's a directory
+    if not settings["input_dir"].endswith("/") or not settings["input_dir"].endswith("\\"):
+        settings["input_dir"] += "/"
 
-    if not settings["outputDir"].endswith("/") or not settings["outputDir"].endswith("\\"): # Ensure it's a directory
-        settings["outputDir"]+="/"
+    # Ensure it's a directory
+    if not settings["output_dir"].endswith("/") or not settings["output_dir"].endswith("\\"):
+        settings["output_dir"] += "/"
 
-    if not os.path.exists(settings["outputDir"]): # Ensure the directory exists
-        os.makedirs(settings["outputDir"])
+    # Ensure the directory exists
+    if not os.path.exists(settings["output_dir"]):
+        os.makedirs(settings["output_dir"])
 
-    if not os.path.exists(settings["inputDir"]): # Ensure the directory exists
-        os.makedirs(settings["inputDir"])
-
+    # Ensure the directory exists
+    if not os.path.exists(settings["input_dir"]):
+        os.makedirs(settings["input_dir"])
 
     def worker(regionCoords: tuple) -> None:
         filename = "r."+regionCoords[0]+"."+regionCoords[1]+".mca"
-        region = optimiseRegion(regionCoords[0],regionCoords[1], settings["inputDir"], settings["optimiseChunks"])
+        region = optimise_region(regionCoords[0], regionCoords[1], settings["input_dir"], settings["optimise_chunks"])
         if region:
             print(filename+" has been cleaned! Saving..")
-            region.save(settings["outputDir"]+filename)
-            if settings["noKeep"]:
-                os.remove(settings["inputDir"]+filename)
+            region.save(settings["output_dir"]+filename)
+            if settings["no_keep"]:
+                os.remove(settings["input_dir"]+filename)
         else:
-            print("Removing file '"+filename+"' as it contains nothing but empty chunks.")
+            print(f"Removing file '{filename}' as it contains nothing but empty chunks.")
 
     with Pool(multiprocessing.cpu_count()) as pool:
         regions = []
-        for item in os.scandir(settings["inputDir"]):
-            if item.path.endswith(".mca") and item.is_file(): # if it's a mca file...
-                regionCoords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca',item.name)[0] # Extract the region coordinates from the file name
+        for item in os.scandir(settings["input_dir"]):
+            # if it's a mca file...
+            if item.path.endswith(".mca") and item.is_file():
+                # Extract the region coordinates from the file name
+                regionCoords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]
                 if regionCoords:
                     regions.append(regionCoords)
-        pool.map(worker,regions)
+        pool.map(worker, regions)
 
     print("Done!")
