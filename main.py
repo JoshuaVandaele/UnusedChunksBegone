@@ -89,7 +89,7 @@ def eighteen_checks(chunk: anvil.Chunk) -> bool:  # 1.18 Checks
     )
 
 
-def optimise_chunk(chunk, chunkVer):
+def optimise_chunk(chunk, chunk_ver):
     """
     Optimise singular chunks.
 
@@ -109,12 +109,12 @@ def optimise_chunk(chunk, chunkVer):
     --------
     optimise_region: Optimise an entire region file.
     """
-    if chunkVer == 0:  # 1.17-
+    if chunk_ver == 0:  # 1.17-
         if "Heightmaps" in chunk["Level"]:
             del chunk["Level"]["Heightmaps"]
         if "isLightOn" in chunk["Level"]:
             del chunk["Level"]["isLightOn"]
-    elif chunkVer == 1:  # 1.18+
+    elif chunk_ver == 1:  # 1.18+
         if "Heightmaps" in chunk:
             del chunk["Heightmaps"]
         if "isLightOn" in chunk:
@@ -122,13 +122,13 @@ def optimise_chunk(chunk, chunkVer):
     return chunk
 
 
-def optimise_region(regionX: str, regionZ: str, directory: str, optimise_chunks: bool) -> anvil.EmptyRegion:
+def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunks: bool) -> anvil.EmptyRegion:
     """
     Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
 
     Parameters
     ----------
-    regionX : str
+    region_x : str
         The region's X position.
     regionY : str
         The region's Y position.
@@ -146,16 +146,16 @@ def optimise_region(regionX: str, regionZ: str, directory: str, optimise_chunks:
 
     Examples
     --------
-    >>> optimise_region("-1","0","./world/regions/",True)
+    >>> optimise_region("-1","0","./world/region_coords_list/",True)
     libs.anvilparser.anvil.empty_region.EmptyRegion object
 
     See Also
     --------
     optimise_chunk: Optimize a singular chunk.
     """
-    region = anvil.Region.from_file(directory+'r.'+regionX+"."+regionZ+'.mca')
-    newRegion = anvil.EmptyRegion(regionX, regionZ)
-    isEmpty = True
+    region = anvil.Region.from_file(directory+'r.'+region_x+"."+region_z+'.mca')
+    new_region = anvil.EmptyRegion(region_x, region_z)
+    is_empty = True
     for chunk_x in range(0, 32):
         for chunk_z in range(0, 32):
             chunk = region.chunk_data(chunk_x, chunk_z)
@@ -167,18 +167,18 @@ def optimise_region(regionX: str, regionZ: str, directory: str, optimise_chunks:
                         # Optimise the chunk itself if asked
                         chunk = optimise_chunk(chunk, 0)
                     # Adds the chunk to the new optimized region
-                    newRegion.add_chunk(anvil.Chunk(chunk))
-                    isEmpty = False
+                    new_region.add_chunk(anvil.Chunk(chunk))
+                    is_empty = False
                 elif ver == 1 and eighteen_checks(chunk):
                     if optimise_chunks:
                         # Optimise the chunk itself if asked
                         chunk = optimise_chunk(chunk, 1)
                     # Adds the chunk to the new optimized region
-                    newRegion.add_chunk(anvil.Chunk(chunk))
-                    isEmpty = False
-    if isEmpty:
+                    new_region.add_chunk(anvil.Chunk(chunk))
+                    is_empty = False
+    if is_empty:
         return None
-    return newRegion
+    return new_region
 
 
 if __name__ == "__main__":
@@ -223,9 +223,10 @@ if __name__ == "__main__":
     if not os.path.exists(settings["input_dir"]):
         os.makedirs(settings["input_dir"])
 
-    def worker(regionCoords: tuple) -> None:
-        filename = "r."+regionCoords[0]+"."+regionCoords[1]+".mca"
-        region = optimise_region(regionCoords[0], regionCoords[1], settings["input_dir"], settings["optimise_chunks"])
+    def worker(region_coords: tuple) -> None:
+        """Worker used for multiprocessing the I/O and optimising tasks"""
+        filename = "r."+region_coords[0]+"."+region_coords[1]+".mca"
+        region = optimise_region(region_coords[0], region_coords[1], settings["input_dir"], settings["optimise_chunks"])
         if region:
             print(filename+" has been cleaned! Saving..")
             region.save(settings["output_dir"]+filename)
@@ -235,14 +236,14 @@ if __name__ == "__main__":
             print(f"Removing file '{filename}' as it contains nothing but empty chunks.")
 
     with Pool(multiprocessing.cpu_count()) as pool:
-        regions = []
+        region_coords_list = []
         for item in os.scandir(settings["input_dir"]):
             # if it's a mca file...
             if item.path.endswith(".mca") and item.is_file():
                 # Extract the region coordinates from the file name
-                regionCoords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]
-                if regionCoords:
-                    regions.append(regionCoords)
-        pool.map(worker, regions)
+                region_coords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]
+                if region_coords:
+                    region_coords_list.append(region_coords)
+        pool.map(worker, region_coords_list)
 
     print("Done!")
