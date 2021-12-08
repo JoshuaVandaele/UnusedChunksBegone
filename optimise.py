@@ -196,6 +196,8 @@ if __name__ == "__main__":
     import re
     from multiprocessing.pool import ThreadPool as Pool
     import multiprocessing
+    from nbt.nbt import MalformedFileError
+    from zlib import error as ZlibError
 
     settings = {
         "no_keep": False,
@@ -240,17 +242,21 @@ if __name__ == "__main__":
 
     def worker(region_coords: tuple) -> None:
         """Worker used for multiprocessing the I/O and optimising tasks"""
-        filename = "r."+region_coords[0]+"."+region_coords[1]+".mca"
-        region = optimise_region(region_coords[0], region_coords[1], settings["input_dir"], settings["optimise_chunks"])
-        if region:
-            print(filename+" has been cleaned! Saving..")
-            if settings["no_keep"]:
-                os.remove(settings["input_dir"]+filename)
-            region.save(settings["output_dir"]+filename)
-        else:
-            print(f"Removing file '{filename}' as it contains nothing but empty chunks.")
-            if settings["replace"]:
-                os.remove(settings["input_dir"]+filename)
+        try:
+            filename = "r."+region_coords[0]+"."+region_coords[1]+".mca"
+            region = optimise_region(region_coords[0], region_coords[1], settings["input_dir"], settings["optimise_chunks"])
+            if region:
+                print(filename+" has been cleaned! Saving..")
+                if settings["no_keep"]:
+                    os.remove(settings["input_dir"]+filename)
+                region.save(settings["output_dir"]+filename)
+            else:
+                print(f"Removing file '{filename}' as it contains nothing but empty chunks.")
+                if settings["replace"]:
+                    os.remove(settings["input_dir"]+filename)
+        except (IndexError, MalformedFileError, UnicodeDecodeError, ZlibError): # Errors that may occur if a file contains corrupted or unreadable data
+            print(f"Error while processing {filename}!")
+            os.rename(inputDir + filename, outputDir + filename)
 
     with Pool(multiprocessing.cpu_count()) as pool:
         region_coords_list = []
