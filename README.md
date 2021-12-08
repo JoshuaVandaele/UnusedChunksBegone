@@ -14,3 +14,4 @@ Put all of your .mca region files into the `input` folder and then run the scrip
 -   `-input "directory"` Select your input folder (Default: ./input/)
 -   `-output "directory"` Select your output folder (Default: ./output/)
 -   `-optimisechunks` Will also attempt to optimise individual chunks by deleting cached data, at the cost of performance upon reloading the chunks. The storage gain is MINOR only use this if you absolutely need it. (Default: False)
+-   `-replace` Replaces the files in your input directory with the optimised ones. Overrides `-nokeep` and `-output`
