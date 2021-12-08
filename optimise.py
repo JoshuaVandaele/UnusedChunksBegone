@@ -201,7 +201,8 @@ if __name__ == "__main__":
         "no_keep": False,
         "input_dir": "./input/",
         "output_dir": "./output/",
-        "optimise_chunks": False
+        "optimise_chunks": False,
+        "replace": False,
     }
 
     if "-nokeep" in sys.argv:
@@ -215,6 +216,11 @@ if __name__ == "__main__":
 
     if "-output" in sys.argv:
         settings["output_dir"] = sys.argv[sys.argv.index("-output")+1]
+
+    if "-replace" in sys.argv:
+        settings["no_keep"] = True
+        settings["replace"] = True
+        settings["output_dir"] = settings["input_dir"]
 
     # Ensure it's a directory
     if not settings["input_dir"].endswith("/") or not settings["input_dir"].endswith("\\"):
@@ -238,11 +244,13 @@ if __name__ == "__main__":
         region = optimise_region(region_coords[0], region_coords[1], settings["input_dir"], settings["optimise_chunks"])
         if region:
             print(filename+" has been cleaned! Saving..")
-            region.save(settings["output_dir"]+filename)
             if settings["no_keep"]:
                 os.remove(settings["input_dir"]+filename)
+            region.save(settings["output_dir"]+filename)
         else:
             print(f"Removing file '{filename}' as it contains nothing but empty chunks.")
+            if settings["replace"]:
+                os.remove(settings["input_dir"]+filename)
 
     with Pool(multiprocessing.cpu_count()) as pool:
         region_coords_list = []
