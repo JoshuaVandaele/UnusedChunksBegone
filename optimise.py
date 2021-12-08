@@ -258,7 +258,7 @@ if __name__ == "__main__":
                     os.remove(settings["input_dir"]+filename)
         except (IndexError, MalformedFileError, UnicodeDecodeError, ZlibError): # Errors that may occur if a file contains corrupted or unreadable data
             print(f"{worker_name}: Error while processing {filename}!")
-            os.rename(inputDir + filename, outputDir + filename)
+            os.rename(settings["input_dir"] + filename, settings["output_dir"] + filename)
 
     with Pool(multiprocessing.cpu_count()) as pool:
         region_coords_list = []
