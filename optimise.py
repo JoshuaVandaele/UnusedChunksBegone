@@ -225,11 +225,10 @@ if __name__ == "__main__":
             string += "/"
         if os.path.isdir(string):
             return string
-        else:
-            raise NotADirectoryError("'"+string+"' is not a valid directory!")
+        raise NotADirectoryError("'"+string+"' is not a valid directory!")
 
     parser = argparse.ArgumentParser(description="Optimise your minecraft region folder to save storage.")
-    
+
     parser.add_argument(
         "-oc", "--optimisechunks",
         help = "Will also attempt to optimise individual chunks by deleting cached data, at the cost of performance upon reloading the chunks. The storage gain is MINOR only use this if you absolutely need it. (Default: False)",
