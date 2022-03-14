@@ -134,7 +134,7 @@ def optimise_chunk(chunk: NBTFile, chunk_ver: int) -> NBTFile:
     return chunk
 
 
-def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunks: bool) -> anvil.EmptyRegion:
+def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks: bool) -> anvil.EmptyRegion:
     """
     Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
 
@@ -146,7 +146,7 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunk
         The region's Y position.
     directory : str
         The region file's directory.
-    optimise_chunks : bool
+    optimisechunks : bool
         Also optimise singular chunks or not?
 
     Returns
@@ -174,14 +174,14 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunk
             if chunk:  # If a chunk exists at those chunk coordinate
                 ver = get_chunk_version(chunk)  # Get it's version
                 if ver == 0 and seventeen_checks(chunk):
-                    if optimise_chunks:
+                    if optimisechunks:
                         # Optimise the chunk itself if asked
                         chunk = optimise_chunk(chunk, 0)
                     # Adds the chunk to the new optimized region
                     new_region.add_chunk(anvil.Chunk(chunk))  # type: ignore
                     is_empty = False
                 elif ver == 1 and eighteen_checks(chunk):
-                    if optimise_chunks:
+                    if optimisechunks:
                         # Optimise the chunk itself if asked
                         chunk = optimise_chunk(chunk, 1)
                     # Adds the chunk to the new optimized region
@@ -193,54 +193,80 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunk
 
 
 if __name__ == "__main__":
-    import sys
     import os
     import re
+    import argparse
     from multiprocessing.pool import ThreadPool as Pool
     import multiprocessing
     from nbt.nbt import MalformedFileError
     from zlib import error as ZlibError
 
-    settings = {
-        "no_keep": False,
-        "input_dir": "./input/",
-        "output_dir": "./output/",
-        "optimise_chunks": False,
-        "replace": False,
-    }
+    def is_directory(string: str) -> str:
+        """
+        Verifies that the given string is a path to a directory.
 
-    if "-nokeep" in sys.argv:
-        settings["no_keep"] = True
+        Parameters
+        ----------
+        string: str
+            Path as string.
 
-    if "-optimisechunks" in sys.argv:
-        settings["optimise_chunks"] = True
+        Returns
+        -------
+        str
+            String that is validated as a path to a directory.
 
-    if "-input" in sys.argv:
-        settings["input_dir"] = sys.argv[sys.argv.index("-input")+1]
+        Raises
+        -------
+        NotADirectoryError
+            An invalid path was supplied.
+        """
+        # Ensure it's a directory
+        if not string.endswith("/") or not string.endswith("\\"):
+            string += "/"
+        if os.path.isdir(string):
+            return string
+        else:
+            raise NotADirectoryError("'"+string+"' is not a valid directory!")
 
-    if "-output" in sys.argv:
-        settings["output_dir"] = sys.argv[sys.argv.index("-output")+1]
+    parser = argparse.ArgumentParser(description="Optimise your minecraft region folder to save storage.")
+    
+    parser.add_argument(
+        "-oc", "--optimisechunks",
+        help = "Will also attempt to optimise individual chunks by deleting cached data, at the cost of performance upon reloading the chunks. The storage gain is MINOR only use this if you absolutely need it. (Default: False)",
+        action = "store_true",
+        default = False
+    )
+    parser.add_argument(
+        "-i", "--input",
+        type = is_directory,
+        help = "Select your input folder (Default: ./input/)",
+        default = "./input/"
+    )
+    parser.add_argument(
+        "-o", "--output",
+        type = is_directory,
+        help = "Select your output folder (Default: ./output/)",
+        default = "./output/"
+    )
+    parser.add_argument(
+        "-nk", "--nokeep",
+        help = "Delete the files as they are done being treated (Default: False)",
+        action = "store_true",
+        default = False
+    )
+    parser.add_argument(
+        "-r", "--replace",
+        help = "Replaces the files in your input directory with the optimised ones.",
+        action = "store_true",
+        default = False
+    )
 
-    if "-replace" in sys.argv:
-        settings["no_keep"] = True
+    settings = vars(parser.parse_args())
+
+    if settings["nokeep"]:
+        settings["nokeep"] = True
         settings["replace"] = True
-        settings["output_dir"] = settings["input_dir"]
-
-    # Ensure it's a directory
-    if not settings["input_dir"].endswith("/") or not settings["input_dir"].endswith("\\"):
-        settings["input_dir"] += "/"
-
-    # Ensure it's a directory
-    if not settings["output_dir"].endswith("/") or not settings["output_dir"].endswith("\\"):
-        settings["output_dir"] += "/"
-
-    # Ensure the directory exists
-    if not os.path.exists(settings["output_dir"]):
-        os.makedirs(settings["output_dir"])
-
-    # Ensure the directory exists
-    if not os.path.exists(settings["input_dir"]):
-        os.makedirs(settings["input_dir"])
+        settings["output"] = settings["input"]
 
     def worker(region_coords: tuple) -> None:
         """Worker used for multiprocessing the I/O and optimising tasks"""
@@ -248,23 +274,23 @@ if __name__ == "__main__":
         filename = "r."+region_coords[0]+"."+region_coords[1]+".mca"
         print(f"{worker_name}: Starting work on {filename}!")
         try:
-            region = optimise_region(region_coords[0], region_coords[1], settings["input_dir"], settings["optimise_chunks"])
+            region = optimise_region(region_coords[0], region_coords[1], settings["input"], settings["optimisechunks"])
             if region:
                 print(f"{worker_name}: {filename} has been cleaned! Saving..")
-                if settings["no_keep"]:
-                    os.remove(settings["input_dir"]+filename)
-                region.save(settings["output_dir"]+filename)
+                if settings["nokeep"]:
+                    os.remove(settings["input"]+filename)
+                region.save(settings["output"]+filename)
             else:
                 print(f"{worker_name}: Removing file '{filename}' as it contains nothing but empty chunks.")
                 if settings["replace"]:
-                    os.remove(settings["input_dir"]+filename)
+                    os.remove(settings["input"]+filename)
         except (IndexError, MalformedFileError, UnicodeDecodeError, ZlibError): # Errors that may occur if a file contains corrupted or unreadable data
             print(f"{worker_name}: Error while processing {filename}!")
-            os.rename(settings["input_dir"] + filename, settings["output_dir"] + filename)
+            os.rename(settings["input"] + filename, settings["output"] + filename)
 
     with Pool(multiprocessing.cpu_count()) as pool:
         region_coords_list = []
-        for item in os.scandir(settings["input_dir"]):
+        for item in os.scandir(settings["input"]):
             # if it's a mca file...
             if item.path.endswith(".mca") and item.is_file():
                 # Extract the region coordinates from the file name
