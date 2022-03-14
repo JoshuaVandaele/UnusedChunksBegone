@@ -10,11 +10,12 @@ Examples
 >>> python optimise.py -nokeep
 """
 import libs.anvilparser.anvil as anvil
+from nbt.nbt import NBTFile
 
 _VERSION_21w43a = 2844  # Version where "Level" was removed from chunk
 
 
-def get_chunk_version(chunk: anvil.Chunk) -> int:
+def get_chunk_version(chunk: NBTFile) -> int:
     """
     Used to know the chunk version.
 
@@ -22,7 +23,7 @@ def get_chunk_version(chunk: anvil.Chunk) -> int:
 
     Parameters
     ----------
-    chunk : anvil.Chunk
+    chunk : NBTFile
         Chunk to check the version from.
 
     Returns
@@ -36,7 +37,7 @@ def get_chunk_version(chunk: anvil.Chunk) -> int:
     return 1  # 1.18+
 
 
-def seventeen_checks(chunk: anvil.Chunk) -> bool:  # 1.17 Checks
+def seventeen_checks(chunk: NBTFile) -> bool:  # 1.17 Checks
     """
     Used for checks prior to the 1.18 chunk format change.
 
@@ -47,7 +48,7 @@ def seventeen_checks(chunk: anvil.Chunk) -> bool:  # 1.17 Checks
 
     Parameters
     ----------
-    chunk : anvil.Chunk
+    chunk : NBTFile
         Chunk to verify.
 
     Returns
@@ -67,7 +68,7 @@ def seventeen_checks(chunk: anvil.Chunk) -> bool:  # 1.17 Checks
     )
 
 
-def eighteen_checks(chunk: anvil.Chunk) -> bool:  # 1.18 Checks
+def eighteen_checks(chunk: NBTFile) -> bool:  # 1.18 Checks
     """
     Used for checks after the 1.18 chunk format change.
 
@@ -78,7 +79,7 @@ def eighteen_checks(chunk: anvil.Chunk) -> bool:  # 1.18 Checks
 
     Parameters
     ----------
-    chunk : anvil.Chunk
+    chunk : NBTFile
         Chunk to verify.
 
     Returns
@@ -98,7 +99,7 @@ def eighteen_checks(chunk: anvil.Chunk) -> bool:  # 1.18 Checks
     )
 
 
-def optimise_chunk(chunk, chunk_ver):
+def optimise_chunk(chunk: NBTFile, chunk_ver: int) -> NBTFile:
     """
     Optimise singular chunks.
 
@@ -106,12 +107,14 @@ def optimise_chunk(chunk, chunk_ver):
 
     Parameters
     ----------
-    chunk : anvil.Chunk
+    chunk : NBTFile
         Chunk to verify.
+    chunk_ver : int
+        Chunk version (see get_chunk_version)
 
     Returns
     -------
-    anvil.Chunk
+    NBTFile
         Optimised chunk.
 
     See Also
@@ -163,30 +166,29 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimise_chunk
     optimise_chunk: Optimize a singular chunk.
     """
     region = anvil.Region.from_file(directory+'r.'+region_x+"."+region_z+'.mca')
-    new_region = anvil.EmptyRegion(region_x, region_z)
+    new_region = anvil.EmptyRegion(int(region_x), int(region_z))
     is_empty = True
     for chunk_x in range(0, 32):
         for chunk_z in range(0, 32):
             chunk = region.chunk_data(chunk_x, chunk_z)
-
-            if chunk:  # If a chunk exists at those chunk coordinates
+            if chunk:  # If a chunk exists at those chunk coordinate
                 ver = get_chunk_version(chunk)  # Get it's version
                 if ver == 0 and seventeen_checks(chunk):
                     if optimise_chunks:
                         # Optimise the chunk itself if asked
                         chunk = optimise_chunk(chunk, 0)
                     # Adds the chunk to the new optimized region
-                    new_region.add_chunk(anvil.Chunk(chunk))
+                    new_region.add_chunk(anvil.Chunk(chunk))  # type: ignore
                     is_empty = False
                 elif ver == 1 and eighteen_checks(chunk):
                     if optimise_chunks:
                         # Optimise the chunk itself if asked
                         chunk = optimise_chunk(chunk, 1)
                     # Adds the chunk to the new optimized region
-                    new_region.add_chunk(anvil.Chunk(chunk))
+                    new_region.add_chunk(anvil.Chunk(chunk))  # type: ignore
                     is_empty = False
     if is_empty:
-        return None
+        return None  # type: ignore
     return new_region
 
 

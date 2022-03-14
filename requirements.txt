@@ -1,0 +1,5 @@
+frozendict==2.3.0
+NBT==1.5.1
+opensimplex==0.4.2
+Pillow==9.0.1
+setuptools==58.1.0
