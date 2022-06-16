@@ -1,9 +1,6 @@
-from typing import Union, List, BinaryIO
+from typing import List, BinaryIO
 from .empty_chunk import EmptyChunk
 from .chunk import Chunk
-from .empty_section import EmptySection
-from .block import Block
-from .errors import OutOfBoundsCoordinates
 from io import BytesIO
 from nbt import nbt
 import zlib
@@ -32,23 +29,6 @@ class EmptyRegion:
         self.x = x
         self.z = z
 
-    def inside(self, x: int, y: int, z: int, chunk: bool=False) -> bool:
-        return True
-        """
-        Returns if the given coordinates are inside this region
-        
-        Parameters
-        ----------
-        int x, y, z
-            Coordinates
-        chunk
-            Whether coordinates are global or chunk coordinates
-        """
-        factor = 32 if chunk else 512
-        rx = x // factor
-        rz = z // factor
-        return not (rx != self.x or rz != self.z or y < 0 or y > 255)
-
     def get_chunk(self, x: int, z: int) -> EmptyChunk:
         """
         Returns the chunk at given chunk coordinates
@@ -65,8 +45,6 @@ class EmptyRegion:
 
         :rtype: :class:`anvil.EmptyChunk`
         """
-        if not self.inside(x, 0, z, chunk=True):
-            raise OutOfBoundsCoordinates(f'Chunk ({x}, {z}) is not inside this region')
         return self.chunks[z % 32 * 32 + x % 32]
 
     def add_chunk(self, chunk: EmptyChunk):
@@ -83,115 +61,9 @@ class EmptyRegion:
         anvil.OutOfBoundCoordidnates
             If the chunk (x, z) is not inside this region
         """
-        if not self.inside(chunk.x, 0, chunk.z, chunk=True):
-            raise OutOfBoundsCoordinates(f'Chunk ({chunk.x}, {chunk.z}) is not inside this region')
         self.chunks[chunk.z % 32 * 32 + chunk.x % 32] = chunk
 
-    def add_section(self, section: EmptySection, x: int, z: int, replace: bool=True):
-        """
-        Adds section to chunk at (x, z).
-        Same as ``EmptyChunk.add_section(section)``
-
-        Parameters
-        ----------
-        section: :class:`EmptySection`
-            Section to add
-        int x, z
-            Chunk's coordinate
-        replace
-            Whether to replace section if it already exists in the chunk
-        
-        Raises
-        ------
-        anvil.OutOfBoundsCoordinates
-            If the chunk (x, z) is not inside this region
-        """
-        if not self.inside(x, 0, z, chunk=True):
-            raise OutOfBoundsCoordinates(f'Chunk ({x}, {z}) is not inside this region')
-        chunk = self.chunks[z % 32 * 32 + x % 32]
-        if chunk is None:
-            chunk = EmptyChunk(x, z)
-            self.add_chunk(chunk)
-        chunk.add_section(section, replace)
-
-    def set_block(self, block: Block, x: int, y: int, z: int):
-        """
-        Sets block at given coordinates.
-        New chunk is made if it doesn't exist.
-
-        Parameters
-        ----------
-        block: :class:`Block`
-            Block to place
-        int x, y, z
-            Coordinates
-
-        Raises
-        ------
-        anvil.OutOfBoundsCoordinates
-            If the block (x, y, z) is not inside this region
-        """
-        if not self.inside(x, y, z):
-            raise OutOfBoundsCoordinates(f'Block ({x}, {y}, {z}) is not inside this region')
-        cx = x // 16
-        cz = z // 16
-        chunk = self.get_chunk(cx, cz)
-        if chunk is None:
-            chunk = EmptyChunk(cx, cz)
-            self.add_chunk(chunk)
-        chunk.set_block(block, x % 16, y, z % 16)
-
-    def set_if_inside(self, block: Block, x: int, y: int, z: int):
-        """
-        Helper function that only sets
-        the block if ``self.inside(x, y, z)`` is true
-        
-        Parameters
-        ----------
-        block: :class:`Block`
-            Block to place
-        int x, y, z
-            Coordinates
-        """
-        if self.inside(x, y, z):
-            self.set_block(block, x, y, z)
-
-    def fill(self, block: Block, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, ignore_outside: bool=False):
-        """
-        Fills in blocks from
-        ``(x1, y1, z1)`` to ``(x2, y2, z2)``
-        in a rectangle.
-
-        Parameters
-        ----------
-        block: :class:`Block`
-        int x1, y1, z1
-            Coordinates
-        int x2, y2, z2
-            Coordinates
-        ignore_outside
-            Whether to ignore if coordinates are outside the region
-
-        Raises
-        ------
-        anvil.OutOfBoundsCoordinates
-            If any of the coordinates are outside the region
-        """
-        if not ignore_outside:
-            if not self.inside(x1, y1, z1):
-                raise OutOfBoundsCoordinates(f'First coords ({x1}, {y1}, {z1}) is not inside this region')
-            if not self.inside(x2, y2, z2):
-                raise OutOfBoundsCoordinates(f'Second coords ({x}, {y}, {z}) is not inside this region')
-
-        for y in from_inclusive(y1, y2):
-            for z in from_inclusive(z1, z2):
-                for x in from_inclusive(x1, x2):
-                    if ignore_outside:
-                        self.set_if_inside(block, x, y, z)
-                    else:
-                        self.set_block(block, x, y, z)
-
-    def save(self, file: Union[str, BinaryIO]=None) -> bytes:
+    def save(self, file: (str|BinaryIO|None)=None) -> bytes:
         """
         Returns the region as bytes with
         the anvil file format structure,

@@ -52,7 +52,7 @@ class Region:
         sectors = self.data[b_off + 3]
         return (off, sectors)
 
-    def chunk_data(self, chunk_x: int, chunk_z: int) -> nbt.NBTFile:
+    def chunk_data(self, chunk_x: int, chunk_z: int) -> (nbt.NBTFile|None):
         """
         Returns the NBT data for a chunk
         

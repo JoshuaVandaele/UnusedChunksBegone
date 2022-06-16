@@ -48,7 +48,7 @@ def get_chunk_version(chunk: NBTFile) -> int:
     return 1  # 1.18+
 
 
-def is_chunk_useless(chunk: NBTFile, chunk_version : int) -> bool:
+def is_chunk_useless(chunk: NBTFile, chunk_version : int) -> (bool|None):
     """
     This function simply checks if a chunk is useless using a few known critters:
     
@@ -71,6 +71,8 @@ def is_chunk_useless(chunk: NBTFile, chunk_version : int) -> bool:
     -------
     bool
         True if the chunk is useful, false otherwise.
+    None
+        An unknown chunk version was passed
 
     See Also
     --------
@@ -84,13 +86,13 @@ def is_chunk_useless(chunk: NBTFile, chunk_version : int) -> bool:
         # Chunk has been visited
         and chunk["Level"]["InhabitedTime"].value > 0
     ) or (
+        chunk_version == 1
         # 1.18 checks
         # Minecraft thinks the chunk has been fully populated/loaded
-        chunk["Status"].value == "full"
+        and chunk["Status"].value == "full"
         # Chunk has been visited/loaded by a player
         and chunk["InhabitedTime"].value > 0
-    )
-
+    ) or None
 def optimise_chunk(chunk: NBTFile, chunk_version: int) -> NBTFile:
     """
     Optimise singular chunks.
@@ -158,7 +160,7 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks
     --------
     optimise_chunk: Optimize a singular chunk.
     """
-    region : anvil.Region = anvil.Region.from_file("f{directory}r.{region_x}.{region_z}.mca")
+    region : anvil.Region = anvil.Region.from_file(f"{directory}r.{region_x}.{region_z}.mca")
     new_region : anvil.EmptyRegion = anvil.EmptyRegion(int(region_x), int(region_z))
     is_region_populated : bool = False
     
