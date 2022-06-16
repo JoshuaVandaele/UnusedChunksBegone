@@ -9,8 +9,19 @@ Examples
 --------
 >>> python optimise.py -nokeep
 """
-import libs.anvilparser.anvil as anvil
+import importlib.util
+from importlib.machinery import ModuleSpec
+from sys import modules
+from types import ModuleType
+
 from nbt.nbt import NBTFile
+
+# This funky thing right there is apparently the python mantra "There is one obvious wayto do it"s way to import a module from it's path.
+# It imports anvil from  "./libs/anvilparser/anvil".
+spec : ModuleSpec = importlib.util.spec_from_file_location("anvil", "./libs/anvilparser/anvil/__init__.py")  # type: ignore
+anvil : ModuleType = importlib.util.module_from_spec(spec)
+modules["anvil"] = anvil
+spec.loader.exec_module(anvil)  # type: ignore
 
 _VERSION_21w43a = 2844  # Version where "Level" was removed from chunk
 
@@ -159,7 +170,7 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks
     Examples
     --------
     >>> optimise_region("-1","0","./world/region_coords_list/",True)
-    libs.anvilparser.anvil.empty_region.EmptyRegion object
+    anvil.EmptyRegion object
 
     See Also
     --------
@@ -193,13 +204,14 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks
 
 
 if __name__ == "__main__":
+    import argparse
+    import multiprocessing
     import os
     import re
-    import argparse
     from multiprocessing.pool import ThreadPool as Pool
-    import multiprocessing
-    from nbt.nbt import MalformedFileError
     from zlib import error as ZlibError
+
+    from nbt.nbt import MalformedFileError
 
     def is_directory(string: str) -> str:
         """
