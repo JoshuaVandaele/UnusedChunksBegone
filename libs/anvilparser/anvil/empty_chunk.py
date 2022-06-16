@@ -1,7 +1,3 @@
-from typing import List
-from .block import Block
-from .empty_section import EmptySection
-from .errors import OutOfBoundsCoordinates, EmptySectionAlreadyExists
 from nbt import nbt
 
 class EmptyChunk:
@@ -23,90 +19,7 @@ class EmptyChunk:
     def __init__(self, x: int, z: int):
         self.x = x
         self.z = z
-        self.sections: List[EmptySection] = [None]*16
         self.version = 1976
-
-    def add_section(self, section: EmptySection, replace: bool = True):
-        """
-        Adds a section to the chunk
-
-        Parameters
-        ----------
-        section
-            Section to add
-        replace
-            Whether to replace section if one at same Y already exists
-        
-        Raises
-        ------
-        anvil.EmptySectionAlreadyExists
-            If ``replace`` is ``False`` and section with same Y already exists in this chunk
-        """
-        if self.sections[section.y] and not replace:
-            raise EmptySectionAlreadyExists(f'EmptySection (Y={section.y}) already exists in this chunk')
-        self.sections[section.y] = section
-
-    def get_block(self, x: int, y: int, z: int) -> Block:
-        """
-        Gets the block at given coordinates
-        
-        Parameters
-        ----------
-        int x, z
-            In range of 0 to 15
-        y
-            In range of 0 to 255
-
-        Raises
-        ------
-        anvil.OutOfBoundCoordidnates
-            If X, Y or Z are not in the proper range
-
-        Returns
-        -------
-        block : :class:`anvil.Block` or None
-            Returns ``None`` if the section is empty, meaning the block
-            is most likely an air block.
-        """
-        if x < 0 or x > 15:
-            raise OutOfBoundsCoordinates(f'X ({x!r}) must be in range of 0 to 15')
-        if z < 0 or z > 15:
-            raise OutOfBoundsCoordinates(f'Z ({z!r}) must be in range of 0 to 15')
-        if y < 0 or y > 255:
-            raise OutOfBoundsCoordinates(f'Y ({y!r}) must be in range of 0 to 255')
-        section = self.sections[y // 16]
-        if section is None:
-            return
-        return section.get_block(x, y % 16, z)
-
-    def set_block(self, block: Block, x: int, y: int, z: int):
-        """
-        Sets block at given coordinates
-        
-        Parameters
-        ----------
-        int x, z
-            In range of 0 to 15
-        y
-            In range of 0 to 255
-
-        Raises
-        ------
-        anvil.OutOfBoundCoordidnates
-            If X, Y or Z are not in the proper range
-        
-        """
-        if x < 0 or x > 15:
-            raise OutOfBoundsCoordinates(f'X ({x!r}) must be in range of 0 to 15')
-        if z < 0 or z > 15:
-            raise OutOfBoundsCoordinates(f'Z ({z!r}) must be in range of 0 to 15')
-        if y < 0 or y > 255:
-            raise OutOfBoundsCoordinates(f'Y ({y!r}) must be in range of 0 to 255')
-        section = self.sections[y // 16]
-        if section is None:
-            section = EmptySection(y // 16)
-            self.add_section(section)
-        section.set_block(block, x, y % 16, z)
 
     def save(self) -> nbt.NBTFile:
         """
@@ -134,15 +47,5 @@ class EmptyChunk:
             nbt.TAG_Byte(name='isLightOn', value=1),
             nbt.TAG_String(name='Status', value='full')
         ])
-        sections = nbt.TAG_List(name='Sections', type=nbt.TAG_Compound)
-        for s in self.sections:
-            if s:
-                p = s.palette()
-                # Minecraft does not save sections that are just air
-                # So we can just skip them
-                if len(p) == 1 and p[0].name() == 'minecraft:air':
-                    continue
-                sections.tags.append(s.save())
-        level.tags.append(sections)
         root.tags.append(level)
         return root
