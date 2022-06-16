@@ -48,69 +48,50 @@ def get_chunk_version(chunk: NBTFile) -> int:
     return 1  # 1.18+
 
 
-def seventeen_checks(chunk: NBTFile) -> bool:  # 1.17 Checks
+def is_chunk_useless(chunk: NBTFile, chunk_version : int) -> bool:
     """
-    Used for checks prior to the 1.18 chunk format change.
-
     This function simply checks if a chunk is useless using a few known critters:
-
+    
+    1.17:
     * Has "Biomes" been generated? If not, this means the chunk hasn't been populated yet.
     * Does the chunk have an "InhabitedTime" over 0? If not, this means the chunk has never been loaded by a player.
-
-    Parameters
-    ----------
-    chunk : NBTFile
-        Chunk to verify.
-
-    Returns
-    -------
-    bool
-        Weither the chunk is considered useless or not.
-
-    See Also
-    --------
-    eighteen_checks : Checks for the 1.18+ versions.
-    """
-    return (
-        # Chunk has been loaded
-        "Biomes" in chunk["Level"]
-        # Chunk has been visited
-        and chunk["Level"]["InhabitedTime"].value > 0
-    )
-
-
-def eighteen_checks(chunk: NBTFile) -> bool:  # 1.18 Checks
-    """
-    Used for checks after the 1.18 chunk format change.
-
-    This function simply checks if a chunk is useless using a few known critters:
-
+    
+    1.18:
     * Has the chunk "Status" been set to full? If not, this means the chunk hasn't been populated yet.
     * Does the chunk have an "InhabitedTime" over 0? If not, this means the chunk has never been loaded by a player.
-
+    
     Parameters
     ----------
     chunk : NBTFile
         Chunk to verify.
+    chunk_version : int
+        Chunk version (See get_chunk_version)
 
     Returns
     -------
     bool
-        Weither the chunk is considered useless or not.
+        True if the chunk is useful, false otherwise.
 
     See Also
     --------
-    seventeen_checks: Checks for the 1.17- versions.
+    get_chunk_version : Obtain the chunk version
     """
     return (
+        # 1.17 checks
+        chunk_version == 0
+        # Chunk has been loaded
+        and "Biomes" in chunk["Level"]
+        # Chunk has been visited
+        and chunk["Level"]["InhabitedTime"].value > 0
+    ) or (
+        # 1.18 checks
         # Minecraft thinks the chunk has been fully populated/loaded
         chunk["Status"].value == "full"
         # Chunk has been visited/loaded by a player
         and chunk["InhabitedTime"].value > 0
     )
 
-
-def optimise_chunk(chunk: NBTFile, chunk_ver: int) -> NBTFile:
+def optimise_chunk(chunk: NBTFile, chunk_version: int) -> NBTFile:
     """
     Optimise singular chunks.
 
@@ -120,7 +101,7 @@ def optimise_chunk(chunk: NBTFile, chunk_ver: int) -> NBTFile:
     ----------
     chunk : NBTFile
         Chunk to verify.
-    chunk_ver : int
+    chunk_version : int
         Chunk version (see get_chunk_version)
 
     Returns
@@ -132,20 +113,21 @@ def optimise_chunk(chunk: NBTFile, chunk_ver: int) -> NBTFile:
     --------
     optimise_region: Optimise an entire region file.
     """
-    if chunk_ver == 0:  # 1.17-
-        if "Heightmaps" in chunk["Level"]:
-            del chunk["Level"]["Heightmaps"]
-        if "isLightOn" in chunk["Level"]:
-            del chunk["Level"]["isLightOn"]
-    elif chunk_ver == 1:  # 1.18+
-        if "Heightmaps" in chunk:
-            del chunk["Heightmaps"]
-        if "isLightOn" in chunk:
-            del chunk["isLightOn"]
+    match chunk_version:
+        case 0:  # 1.17-
+            if "Heightmaps" in chunk["Level"]:
+                del chunk["Level"]["Heightmaps"]
+            if "isLightOn" in chunk["Level"]:
+                del chunk["Level"]["isLightOn"]
+        case 1:  # 1.18+
+            if "Heightmaps" in chunk:
+                del chunk["Heightmaps"]
+            if "isLightOn" in chunk:
+                del chunk["isLightOn"]
     return chunk
 
 
-def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks: bool) -> anvil.EmptyRegion:
+def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks: bool) -> (None|anvil.EmptyRegion):
     """
     Used to filter out useless chunks from a region file, given its X and Y position, and its directory.
 
@@ -176,31 +158,22 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks
     --------
     optimise_chunk: Optimize a singular chunk.
     """
-    region = anvil.Region.from_file(directory+'r.'+region_x+"."+region_z+'.mca')
-    new_region = anvil.EmptyRegion(int(region_x), int(region_z))
-    is_empty = True
+    region : anvil.Region = anvil.Region.from_file("f{directory}r.{region_x}.{region_z}.mca")
+    new_region : anvil.EmptyRegion = anvil.EmptyRegion(int(region_x), int(region_z))
+    is_region_populated : bool = False
+    
     for chunk_x in range(0, 32):
         for chunk_z in range(0, 32):
-            chunk = region.chunk_data(chunk_x, chunk_z)
+            chunk : NBTFile = region.chunk_data(chunk_x, chunk_z)
             if chunk:  # If a chunk exists at those chunk coordinate
-                ver = get_chunk_version(chunk)  # Get its version
-                if ver == 0 and seventeen_checks(chunk):
-                    if optimisechunks:
-                        # Optimise the chunk itself if asked
-                        chunk = optimise_chunk(chunk, 0)
-                    # Adds the chunk to the new optimized region
+                chunk_version : int = get_chunk_version(chunk)  # Get its version
+                if optimisechunks:
+                    chunk = optimise_chunk(chunk, chunk_version)
+                if is_chunk_useless(chunk, chunk_version): 
                     new_region.add_chunk(anvil.Chunk(chunk))  # type: ignore
-                    is_empty = False
-                elif ver == 1 and eighteen_checks(chunk):
-                    if optimisechunks:
-                        # Optimise the chunk itself if asked
-                        chunk = optimise_chunk(chunk, 1)
-                    # Adds the chunk to the new optimized region
-                    new_region.add_chunk(anvil.Chunk(chunk))  # type: ignore
-                    is_empty = False
-    if is_empty:
-        return None  # type: ignore
-    return new_region
+                    is_region_populated = True
+                    
+    return new_region if is_region_populated else None
 
 
 if __name__ == "__main__":
@@ -237,7 +210,7 @@ if __name__ == "__main__":
             string += "/"
         if os.path.isdir(string):
             return string
-        raise NotADirectoryError("'"+string+"' is not a valid directory!")
+        raise NotADirectoryError(f"'{string}' is not a valid directory!")
 
     parser = argparse.ArgumentParser(description="Optimise your minecraft region folder to save storage.")
 
@@ -282,7 +255,7 @@ if __name__ == "__main__":
     def worker(region_coords: tuple) -> None:
         """Worker used for multiprocessing the I/O and optimising tasks"""
         worker_name = multiprocessing.Process().name
-        filename = "r."+region_coords[0]+"."+region_coords[1]+".mca"
+        filename = f"r.{region_coords[0]}.{region_coords[1]}.mca"
         print(f"{worker_name}: Starting work on {filename}!")
         try:
             region = optimise_region(region_coords[0], region_coords[1], settings["input"], settings["optimisechunks"])
