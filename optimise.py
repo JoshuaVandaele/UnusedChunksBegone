@@ -16,7 +16,7 @@ from types import ModuleType
 
 from nbt.nbt import NBTFile
 
-# This funky thing right there is apparently the python mantra "There is one obvious wayto do it"s way to import a module from it's path.
+# This funky thing right there is apparently the python mantra "There is one obvious wayto do it"s way to import a module from its path.
 # It imports anvil from  "./libs/anvilparser/anvil".
 spec : ModuleSpec = importlib.util.spec_from_file_location("anvil", "./libs/anvilparser/anvil/__init__.py")  # type: ignore
 anvil : ModuleType = importlib.util.module_from_spec(spec)
@@ -147,7 +147,7 @@ def optimise_chunk(chunk: NBTFile, chunk_ver: int) -> NBTFile:
 
 def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks: bool) -> anvil.EmptyRegion:
     """
-    Used to filter out useless chunks from a region file, given it's X and Y position, and it's directory.
+    Used to filter out useless chunks from a region file, given its X and Y position, and its directory.
 
     Parameters
     ----------
@@ -183,7 +183,7 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks
         for chunk_z in range(0, 32):
             chunk = region.chunk_data(chunk_x, chunk_z)
             if chunk:  # If a chunk exists at those chunk coordinate
-                ver = get_chunk_version(chunk)  # Get it's version
+                ver = get_chunk_version(chunk)  # Get its version
                 if ver == 0 and seventeen_checks(chunk):
                     if optimisechunks:
                         # Optimise the chunk itself if asked
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         NotADirectoryError
             An invalid path was supplied.
         """
-        # Ensure it's a directory
+        # Ensure its a directory
         if not string.endswith("/") or not string.endswith("\\"):
             string += "/"
         if os.path.isdir(string):
@@ -302,7 +302,7 @@ if __name__ == "__main__":
     with Pool(multiprocessing.cpu_count()) as pool:
         region_coords_list = []
         for item in os.scandir(settings["input"]):
-            # if it's a mca file...
+            # if its a mca file...
             if item.path.endswith(".mca") and item.is_file():
                 # Extract the region coordinates from the file name
                 region_coords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]
