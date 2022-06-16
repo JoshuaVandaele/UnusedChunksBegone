@@ -275,14 +275,12 @@ if __name__ == "__main__":
             os.rename(settings["input"] + filename, settings["output"] + filename)
 
     with Pool(multiprocessing.cpu_count()) as pool:
-        region_coords_list = []
-        for item in os.scandir(settings["input"]):
-            # if its a mca file...
-            if item.path.endswith(".mca") and item.is_file():
-                # Extract the region coordinates from the file name
-                region_coords = re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]
-                if region_coords:
-                    region_coords_list.append(region_coords)
+        region_coords_list = [region_coords
+                                for item in os.scandir(settings["input"])
+                                    if item.path.endswith(".mca")
+                                        and item.is_file()
+                                        and (region_coords := re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]) # Extract the region coordinates from the file name
+                            ]
         pool.map(worker, region_coords_list)
 
     print("Done!")
