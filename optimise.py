@@ -179,10 +179,10 @@ def optimise_region(region_x: str, region_z: str, directory: str, optimisechunks
 
 
 if __name__ == "__main__":
-    import argparse
-    import multiprocessing
+    from argparse import ArgumentParser
+    from multiprocessing import Process, cpu_count
     import os
-    import re
+    from re import findall as re_findall
     from multiprocessing.pool import ThreadPool as Pool
     from zlib import error as ZlibError
 
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             return string
         raise NotADirectoryError(f"'{string}' is not a valid directory!")
 
-    parser = argparse.ArgumentParser(description="Optimise your minecraft region folder to save storage.")
+    parser = ArgumentParser(description="Optimise your minecraft region folder to save storage.")
 
     parser.add_argument(
         "-oc", "--optimisechunks",
@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
     def worker(region_coords: tuple) -> None:
         """Worker used for multiprocessing the I/O and optimising tasks"""
-        worker_name = multiprocessing.Process().name
+        worker_name = Process().name
         filename = f"r.{region_coords[0]}.{region_coords[1]}.mca"
         print(f"{worker_name}: Starting work on {filename}!")
         try:
@@ -274,12 +274,12 @@ if __name__ == "__main__":
             print(f"{worker_name}: Error while processing {filename}!")
             os.rename(settings["input"] + filename, settings["output"] + filename)
 
-    with Pool(multiprocessing.cpu_count()) as pool:
+    with Pool(cpu_count()) as pool:
         region_coords_list = [region_coords
                                 for item in os.scandir(settings["input"])
                                     if item.path.endswith(".mca")
                                         and item.is_file()
-                                        and (region_coords := re.findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]) # Extract the region coordinates from the file name
+                                        and (region_coords := re_findall(r'r\.(-?\d+)\.(-?\d+)\.mca', item.name)[0]) # Extract the region coordinates from the file name
                             ]
         pool.map(worker, region_coords_list)
 
